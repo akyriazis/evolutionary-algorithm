@@ -235,8 +235,7 @@ public class Evolution {
 		try {
 			Evolver ev = evolverType.getConstructor(String.class).newInstance(dna);
 			return ev;
-		} catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| NoSuchMethodException | SecurityException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
 		}

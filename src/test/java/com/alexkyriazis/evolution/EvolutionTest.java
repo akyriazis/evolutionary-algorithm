@@ -14,8 +14,8 @@ public class EvolutionTest {
 
 	Evolution evolutionTest;
 
-	public final String DNA = "wadsaddadwadwaadawadwadwawdad";
-	public final int GEN_NUM = 100;
+	public final String DNA = "aswawaawawswadswdwdwwswswssswsdddwddwdwdswawadwawawdasaawawdaaaaadwadadadsadwawadwswswwsawsaswawsawsaadwads";
+	public final int GEN_NUM = 500;
 
 	@Before
 	public void init() {
@@ -56,7 +56,7 @@ public class EvolutionTest {
 	 */
 
 	@Test
-	public void testEvolutionImprovement() {
+	public void testEvolutionImprovementQuantitative() {
 		int startingFitness = evolutionTest.getCurrentGeneration().get(0).getFitness();
 		for (int i = 0; i < GEN_NUM; i++) {
 			evolutionTest.evolve(1);
@@ -65,5 +65,19 @@ public class EvolutionTest {
 
 		assertTrue(endingFitness > startingFitness);
 	}
+	
+	@Test
+	public void testEvolutionImprovementQualitative() {
+		
+		Evolution findTarget = new Evolution(TargetFinder.class, DNA);
+		for (int i = 0; i < GEN_NUM; i++) {
+			findTarget.evolve(1);
+		}
+		System.out.println("Generation " + findTarget.getGenerationCount());
+		findTarget.printGen(findTarget.getCurrentGeneration());		
+	}
+	
+	
+	
 
 }

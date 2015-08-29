@@ -177,7 +177,7 @@ public class Evolution {
 		for (Evolver evolver : generation) {
 			evolver.simulateLife();
 		}
-		generation.sort(Evolution.FitnessComparator);
+		Collections.sort(generation, FitnessComparator);
 	}
 
 	private void createNewGeneration(List<Evolver> generation) {

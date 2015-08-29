@@ -79,7 +79,7 @@ The code in this repository is responsible for generating the library. To use th
   
 ##Building the Project
 
-This repository is responsible for generating the library. If you want to contribute to improving aspects of the algorithm follow these instructions.
+This repository is responsible for generating the library. If you want to contribute to improving aspects of the algorithm follow these instructions to build the project.
 
 1. This project is built using Maven build manager. Install <a href="https://maven.apache.org/index.html">Maven</a>
 

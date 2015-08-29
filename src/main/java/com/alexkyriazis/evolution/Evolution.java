@@ -1,32 +1,20 @@
 package com.alexkyriazis.evolution;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Properties;
 
 public class Evolution {
-
+	private double defaultSurvivalConstant = 0.5;
+	private double defaultIndividualMutationRate = 0.5;
+	private double defaultDnaMutationRate = 0.02;
+	private double defaultCrossoverRate = 1;
+	
 	private List<Evolver> currentGeneration = new ArrayList<Evolver>();
 	private int generationCount = 0;
-
-	/*
-	 * Config values. They are initialized here with default values to be
-	 * overwritten by config file
-	 */
-	private int popSize = 10;
-	private double probDistConst = 0.5;
-	private double individualMutationRate = 0.5;
-	private double dnaMutationRate = 0.02;
-	private double crossOverRate = 1;
-
-	private double probDist[];
+	private int popSize;
+	private double savedSurvivalDistribution[];
 
 	private Class<? extends Evolver> evolverType;
 
@@ -50,39 +38,25 @@ public class Evolution {
 	 * @param evolverType:
 	 *            The class type to evolve. Must extend Evolver.
 	 * 
+	 * @param popSize:
+	 * 			  The number of individuals in each generation. Musts be larger than 0.
+	 * 
 	 * @param startingDna:
 	 *            The DNA that the first generation evolves off of. Note: the
 	 *            first generation does not exactly have this DNA, but rather a
 	 *            mutation of it.
 	 */
-	public Evolution(Class<? extends Evolver> evolverType, String startingDna) {
-
-		File configFile = new File("config.properties");
-
-		try {
-			FileReader reader = new FileReader(configFile);
-			Properties props = new Properties();
-			props.load(reader);
-
-			this.popSize = Integer.parseInt(props.getProperty("popSize"));
-			this.probDistConst = Double.parseDouble(props.getProperty("probDistConst"));
-			this.individualMutationRate = Double.parseDouble(props.getProperty("individualMutationRate"));
-			this.dnaMutationRate = Double.parseDouble(props.getProperty("dnaMutationRate"));
-			this.crossOverRate = Double.parseDouble(props.getProperty("crossOverRate"));
-
-			reader.close();
-		} catch (FileNotFoundException ex) {
-			System.err.println("Error: Cannot find file config.properties. Using default config values");
-		} catch (IOException ex) {
-			System.err.println("Error: Config read error. Using default values");
+	public Evolution(Class<? extends Evolver> evolverType, int popSize, String startingDna) {
+		if (popSize < 1) {
+			throw new IllegalArgumentException("Population size out of bounds");
 		}
-
+		this.popSize = popSize;
 		this.evolverType = evolverType;
 		this.setup(startingDna);
 	}
 
 	/**
-	 * Simulates evolution for the given number of generations.
+	 * Simulates evolution for the given number of generations, with advanced evolution parameters.
 	 * 
 	 * After evolving, getCurrentGeneration() can be called to see the evolved
 	 * population.
@@ -90,16 +64,54 @@ public class Evolution {
 	 * @param numGenerations:
 	 *            the number of generations to simulate for. Must be greater
 	 *            than 0.
+	 *            
+	 * @param survivalConstant:
+	 * 			  a number between 0 and 1 (inclusive) representative of the relative likeliness of the top performer to advance to the next generation compared to lower performers.
+	 * 
+	 * @param individualMutationRate:
+	 * 			  a percentage between 0 and 1 representing the probability that a certain individual in a population will undergo mutation.
+	 * 
+	 * @param dnaMutationRate:
+	 * 			  a percentage between 0 and 1 representing the probability that a letter in a DNA strand will undergo mutation (in an individual that has already been selected to mutate using the individualMutationRate probability)
+	 * 
+	 * @param double crossOverRate:
+	 * 			  a percentage between 0 and 1 representing the probability that two individuals in a population will crossOver their DNA.
+	 *
+	 * @throws IllegalArgumentException if any parameter conditions are not met
 	 */
-	public void evolve(int numGenerations) {
-		if (numGenerations < 0) {
-			numGenerations = 0;
+	public void evolve(int numGenerations, double survivalConstant, double individualMutationRate, double dnaMutationRate, double crossOverRate) {
+		if (numGenerations < 0
+				|| survivalConstant < 0 || survivalConstant > 1 
+				|| individualMutationRate < 0 || individualMutationRate > 1 
+				|| dnaMutationRate < 0 || dnaMutationRate > 1 
+				|| crossOverRate < 0 || crossOverRate > 1) {
+			throw new IllegalArgumentException("Parameter(s) out of bounds");
 		}
 		for (int i = 0; i < numGenerations; i++) {
-			this.loop();
+			this.loop(survivalConstant, individualMutationRate, dnaMutationRate, crossOverRate);
 		}
 	}
-
+	
+	/**
+	 * Simulates evolution for the given number of generations, with default evolution parameters. These default parameters can be set with setDefaultEvolutionParameters()
+	 * 
+	 * After evolving, getCurrentGeneration() can be called to see the evolved
+	 * population.
+	 * 
+	 * @param numGenerations:
+	 *            the number of generations to simulate for. Must be greater
+	 *            than 0.
+	 *            
+	 * The default evolution parameters are         
+	 * 			  SURVIVAL_CONSTANT = 0.5
+	 *			  INDIVIDUAL_MUTATION_RATE = 0.5
+	 *			  DNA_MUTATION_RATE = 0.02
+	 *			  CROSSOVER_RATE = 1
+	 */
+	public void evolve(int numGenerations) {
+		evolve(numGenerations,this.defaultSurvivalConstant,this.defaultIndividualMutationRate,this.defaultDnaMutationRate,this.defaultCrossoverRate);
+	}
+	
 	/**
 	 * Returns the number of generations the population has been evolving for.
 	 * 
@@ -128,14 +140,44 @@ public class Evolution {
 	public List<Evolver> getCurrentGeneration() {
 		return Collections.unmodifiableList(this.currentGeneration);
 	}
-	
+	/**
+	 * Sets the parameters that will be called by default when evolve(int numGenerations) is called.
+	 * 
+	 * Useful if the same parameters are to be used for the entire program.
+	 * 
+	 * @param survivalConstant:
+	 * 			  a number between 0 and 1 (inclusive) representative of the relative likeliness of the top performer to advance to the next generation compared to lower performers.
+	 * 
+	 * @param individualMutationRate:
+	 * 			  a percentage between 0 and 1 representing the probability that a certain individual in a population will undergo mutation.
+	 * 
+	 * @param dnaMutationRate:
+	 * 			  a percentage between 0 and 1 representing the probability that a letter in a DNA strand will undergo mutation (in an individual that has already been selected to mutate using the individualMutationRate probability)
+	 * 
+	 * @param double crossOverRate:
+	 * 			  a percentage between 0 and 1 representing the probability that two individuals in a population will crossOver their DNA.
+	 *
+	 * @throws IllegalArgumentException if any parameter conditions are not met
+	 */
+	public void setDefaultEvolutionParameters(double survivalConstant, double individualMutationRate, double dnaMutationRate, double crossOverRate) {
+		if (survivalConstant < 0 || survivalConstant > 1 
+				|| individualMutationRate < 0 || individualMutationRate > 1 
+				|| dnaMutationRate < 0 || dnaMutationRate > 1 
+				|| crossOverRate < 0 || crossOverRate > 1) {
+			throw new IllegalArgumentException("Parameter(s) out of bounds");
+		}
+		
+		this.defaultSurvivalConstant = survivalConstant;
+		this.defaultIndividualMutationRate = dnaMutationRate;
+		this.defaultDnaMutationRate = dnaMutationRate;
+		this.defaultCrossoverRate = crossOverRate;
+	}
 	/**
 	 * Prints DNA and Fitness data about a population of evolvers.
 	 * 
 	 * @param generation:
 	 *            a list of evolvers whose information will be printed
 	 */
-
 	public void printGen(List<Evolver> generation) {
 		System.out.println("================");
 		for (Evolver evol : generation) {
@@ -154,21 +196,10 @@ public class Evolution {
 			this.currentGeneration.add(individual);
 		}
 		this.simulateGeneration(this.currentGeneration);
-
-		// setup probability distribution. An accumulated, normalized set of
-		// probabilities.
-		double sum = 0;
-
-		probDist = new double[this.popSize];
-		for (int i = 0; i < this.popSize - 1; i++) {
-			sum += (Math.pow(1 - this.probDistConst, i)) * this.probDistConst;
-			probDist[i] = sum;
-		}
-		probDist[this.popSize - 1] = sum + Math.pow(1 - this.probDistConst, this.popSize - 1);
 	}
 
-	private void loop() {
-		List<Evolver> newGen = breedNewGeneration(this.currentGeneration);
+	private void loop(double survivalConstant, double individualMutationRate, double dnaMutationRate, double crossOverRate) {
+		List<Evolver> newGen = breedNewGeneration(this.currentGeneration, survivalConstant, individualMutationRate, dnaMutationRate, crossOverRate );
 		this.createNewGeneration(newGen);
 		this.simulateGeneration(this.currentGeneration);
 	}
@@ -186,22 +217,24 @@ public class Evolution {
 		this.generationCount++;
 	}
 
-	private List<Evolver> breedNewGeneration(List<Evolver> oldGeneration) {
+	private List<Evolver> breedNewGeneration(List<Evolver> oldGeneration, double survivalConstant, double individualMutationRate, double dnaMutationRate, double crossOverRate) {
 		List<Evolver> newPop = new ArrayList<Evolver>();
+		
+		double[] probDist = this.getSurvivalProbabilities(survivalConstant);
 
 		for (int i = 0; i < this.popSize; i++) {
 			double choice = Math.random();
 
-			for (int j = 0; j < this.probDist.length; j++) {
+			for (int j = 0; j < probDist.length; j++) {
 
-				if (choice < this.probDist[j]) {
+				if (choice < probDist[j]) {
 					newPop.add(Evolution.createEvolver(this.evolverType, oldGeneration.get(j).getDna()));
 					break;
 				}
 			}
 		}
-		this.crossOver(newPop, this.crossOverRate);
-		this.mutate(newPop, this.individualMutationRate, this.dnaMutationRate);
+		this.crossOver(newPop, crossOverRate);
+		this.mutate(newPop, individualMutationRate, dnaMutationRate);
 
 		return newPop;
 	}
@@ -225,6 +258,25 @@ public class Evolution {
 				population.get(i).mutate(dnaMutationRate, false);
 			}
 		}
+	}
+	
+	private double[] getSurvivalProbabilities(double survivalConstant) {
+		
+		if (this.savedSurvivalDistribution != null && this.savedSurvivalDistribution[0] == survivalConstant) {return this.savedSurvivalDistribution;}
+		
+		double sum = 0;
+		double probDist[] = new double[this.popSize];
+		
+		for (int i = 0; i < this.popSize - 1; i++) {
+			sum += (Math.pow(1 - survivalConstant, i)) * survivalConstant;
+			probDist[i] = sum;
+		}
+		probDist[this.popSize - 1] = sum + Math.pow(1 - survivalConstant, this.popSize - 1);
+		
+		assert (Math.abs(probDist[this.popSize - 1] - 1) < 0.01);
+		
+		this.savedSurvivalDistribution = probDist;
+		return probDist;
 	}
 
 	private static Evolver createEvolver(Class<? extends Evolver> evolverType, String dna) {

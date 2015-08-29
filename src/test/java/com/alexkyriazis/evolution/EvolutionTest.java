@@ -16,10 +16,12 @@ public class EvolutionTest {
 
 	public final String DNA = "aswawaawawswadswdwdwwswswssswsdddwddwdwdswawadwawawdasaawawdaaaaadwadadadsadwawadwswswwsawsaswawsawsaadwads";
 	public final int GEN_NUM = 500;
+	public final int POP_SIZE = 10;
+
 
 	@Before
 	public void init() {
-		evolutionTest = new Evolution(TargetFinder.class, DNA);
+		evolutionTest = new Evolution(TargetFinder.class, POP_SIZE, DNA);
 	}
 
 	/*
@@ -47,14 +49,32 @@ public class EvolutionTest {
 		}
 		assertEquals(evolutionTest.getGenerationCount(), GEN_NUM);
 	}
-
+	
+	/*Make sure evolution complains at incorrect parameters*/
+	@Test
+	public void testOutofBounds() {
+		try {
+			evolutionTest.evolve(-5);
+			fail();
+		}catch(Exception e){}
+		
+		try {
+			evolutionTest.evolve(2,0.5,0.8,1.2,0.2);
+			fail();
+		}catch(Exception e){}
+		
+		try {
+			evolutionTest.setDefaultEvolutionParameters(0.5,0.8,-67,0.2);
+			fail();
+		}catch(Exception e){}
+	}
+	
 	/*
 	 * We can't test short-term evolution reliably since it is probablistic
 	 * 
 	 * What we can do, although we are not 100% certain due to the probalistic
 	 * nature of genetic algorithms, is assume that fitness increases over time.
 	 */
-
 	@Test
 	public void testEvolutionImprovementQuantitative() {
 		int startingFitness = evolutionTest.getCurrentGeneration().get(0).getFitness();
@@ -66,15 +86,16 @@ public class EvolutionTest {
 		assertTrue(endingFitness > startingFitness);
 	}
 	
+	/*
+	 * No JUnit checking here. It displays the last generation in the console for a qualitative observation 
+	 */	
 	@Test
 	public void testEvolutionImprovementQualitative() {
-		
-		Evolution findTarget = new Evolution(TargetFinder.class, DNA);
 		for (int i = 0; i < GEN_NUM; i++) {
-			findTarget.evolve(1);
+			evolutionTest.evolve(1);
 		}
-		System.out.println("Generation " + findTarget.getGenerationCount());
-		findTarget.printGen(findTarget.getCurrentGeneration());		
+		System.out.println("Generation " + evolutionTest.getGenerationCount());
+		evolutionTest.printGen(evolutionTest.getCurrentGeneration());		
 	}
 	
 	

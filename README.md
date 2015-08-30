@@ -13,7 +13,7 @@ A solution is thought of as a string of 'DNA'.
 - The newly mutated solution is re-evaluated to determine if its an improvement to the previous solution.
 - If it is, use it and perform further mutations. If not, use the previous solution.
 
-This procedure is very effective at solving specific kinds of optimization problems.
+As a result, over time the solutions get more and more optimized. This is natural selection at work! This procedure is very effective at solving specific kinds of optimization problems.
 
 In this specific implementation of an evolutionary algorithm, solutions are evolved alongside a population of solutions. Each solution's 'fitness' evaluation determines how likely that particular solution (in the population of solutions for that generation) is to survive in the next generation. In addition to mutation, the DNA of solutions are changed by 'crossover'. This is essentially splicing of DNA between two individuals- reminiscent of breeding in nature.
 

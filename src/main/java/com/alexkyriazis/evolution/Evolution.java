@@ -137,7 +137,7 @@ public class Evolution {
 	 *
 	 * @return the list of Evolvers from the current generation.
 	 */
-	public List<Evolver> getCurrentGeneration() {
+	public List<? extends Evolver> getCurrentGeneration() {
 		return Collections.unmodifiableList(this.currentGeneration);
 	}
 	/**
@@ -178,7 +178,7 @@ public class Evolution {
 	 * @param generation:
 	 *            a list of evolvers whose information will be printed
 	 */
-	public void printGen(List<Evolver> generation) {
+	public void printGen(List<? extends Evolver> generation) {
 		System.out.println("================");
 		for (Evolver evol : generation) {
 			System.out.println(evol.getDna() + " - " + evol.getFitness());

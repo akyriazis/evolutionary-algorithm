@@ -30,7 +30,7 @@ public class EvolutionTest {
 	 */
 	@Test
 	public void testGetCurrentGeneration() {
-		List<Evolver> population = evolutionTest.getCurrentGeneration();
+		List<TargetFinder> population = (List<TargetFinder>) evolutionTest.getCurrentGeneration();
 		int dnaSize = DNA.length();
 
 		for (Evolver evol : population) {

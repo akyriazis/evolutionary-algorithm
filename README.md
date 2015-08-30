@@ -113,3 +113,9 @@ This repository is responsible for generating the library. If you want to contri
   ```$ mvn clean install```
 
 3. The JAR will be generated in the \target folder
+
+##Example
+
+Check out this example project I made that uses this library.
+
+[Nature simulation](https://github.com/akyriazis/nature-simulation)
